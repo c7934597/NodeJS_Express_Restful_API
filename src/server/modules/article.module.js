@@ -1,4 +1,5 @@
 // article.module.js
+import jwt from 'jsonwebtoken'
 import mysql from 'mysql'
 import config from '../../config/config'
 
@@ -9,6 +10,38 @@ const connectionPool = mysql.createPool({
   password: config.mysqlPass,
   database: config.mysqlDatabase
 })
+
+/*  Article GET JWT取得個人文章  */
+const selectPersonalArticle = (token) => {
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, 'my_secret_key', (err, decoded) => {
+      if (err) {
+        reject(err) // 驗證失敗回傳錯誤
+      } else {
+        // JWT 驗證成功 ->取得用戶 user_id
+        const userId = decoded.payload.user_id
+        // JWT 驗證成功 -> 撈取該使用者的所有文章
+        connectionPool.getConnection((connectionError, connection) => { // 資料庫連線
+          if (connectionError) {
+            reject(connectionError) // 若連線有問題回傳錯誤
+          } else {
+            connection.query( // Article 撈取 user_id 的所有值組
+              'SELECT * FROM Article WHERE user_id = ?', [userId]
+              , (error, result) => {
+                if (error) {
+                  reject(error) // 寫入資料庫有問題時回傳錯誤
+                } else {
+                  resolve(result) // 撈取成功回傳 JSON 資料
+                }
+                connection.release()
+              }
+            )
+          }
+        })
+      }
+    })
+  })
+}
 
 /*  Article GET 取得  */
 const selectArticle = () => {
@@ -107,6 +140,7 @@ const deleteArticle = (userId) => {
 }
 
 export default {
+  selectPersonalArticle,
   selectArticle,
   createArticle,
   modifyArticle,
