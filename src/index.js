@@ -1,7 +1,6 @@
 import config from './config/config'
 import app from './config/express'
 
-// test
 if (!module.parent) {
   // listen on port config.port
   app.listen(config.port, () => {
